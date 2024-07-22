@@ -39,25 +39,13 @@ jobs:
     - name: Convert PKCS#12 to PFX (Personal Information Exchange)
       run: openssl pkcs12 -in code_signing.p12 -out code_signing.pfx -passin pass:yourpassphrase -passout pass:yourpassphrase
 
-    - name: Sign executable with Wine and SignTool
-      uses: addnab/docker-run-action@v3
-      with:
-        image: ghcr.io/crazy-max/ghaction-wine:latest
-        options: --entrypoint "/bin/sh"
-        run: |
-          wget https://download.microsoft.com/download/9/7/2/97263b5b-df07-4ba5-b845-d33f73d9e8fe/standalonesdkarm/VC_redist.x86.exe
-          wine VC_redist.x86.exe /q
-          wget https://download.microsoft.com/download/5/F/4/5F4A9A2F-9316-4E38-B17C-44131C301166/signtool.zip
-          unzip signtool.zip -d signtool
-          wine signtool/signtool.exe sign /f code_signing.pfx /p yourpassphrase /t http://timestamp.digicert.com out/yourapplication.exe
+    - name: Sign executable
+      run: |
+        "C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe" sign /f code_signing.pfx /p yourpassphrase /t http://timestamp.digicert.com out\yourapplication.exe
 
-    - name: Verify signature with Wine and SignTool
-      uses: addnab/docker-run-action@v3
-      with:
-        image: ghcr.io/crazy-max/ghaction-wine:latest
-        options: --entrypoint "/bin/sh"
-        run: |
-          wine signtool/signtool.exe verify /pa /v out/yourapplication.exe
+    - name: Verify signature
+      run: |
+        "C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe" verify /pa /v out\yourapplication.exe
 
     - name: Upload signed executable
       uses: actions/upload-artifact@v3
