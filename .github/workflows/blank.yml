@@ -21,7 +21,7 @@ jobs:
         dotnet-version: '6.0.x' # Adjust the version as needed
 
     - name: Install dependencies
-      run: dotnet restore
+      run: dotnet restore MySolution.sln
 
     - name: Build project
       run: dotnet build --configuration Release --no-restore
