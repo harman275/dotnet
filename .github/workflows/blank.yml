@@ -24,10 +24,10 @@ jobs:
       run: dotnet restore MySolution.sln
 
     - name: Build project
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build MySolution.sln --configuration Release --output ./output
 
     - name: Publish project
-      run: dotnet publish -c Release -o out
+      run: dotnet publish MyProject.csproj -c Release -r win-x64 --self-contained true -o ./publish
 
     - name: Generate private key and self-signed certificate
       run: |
