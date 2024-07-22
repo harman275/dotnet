@@ -35,15 +35,18 @@ jobs:
     - name: Generate private key and self-signed certificate
       run: |
         openssl req -newkey rsa:2048 -nodes -keyout private.key -x509 -days 90 -out code_signing.crt -subj "/C=US/ST=State/L=City/O=Organization/OU=Unit/CN=yourdomain.com"
+        echo "Private key and certificate generated."
 
     - name: Create PKCS#12 keystore
       run: |
         openssl pkcs12 -export -in code_signing.crt -inkey private.key -out code_signing.p12 -name code_signing -passout pass:yourpassphrase
+        echo "PKCS#12 keystore created."
         openssl pkcs12 -info -in code_signing.p12 -noout -passin pass:yourpassphrase
 
     - name: Convert PKCS#12 to PFX (Personal Information Exchange)
       run: |
         openssl pkcs12 -in code_signing.p12 -out code_signing.pfx -passin pass:yourpassphrase -passout pass:yourpassphrase
+        echo "PKCS#12 converted to PFX."
         openssl pkcs12 -info -in code_signing.pfx -noout -passin pass:yourpassphrase
 
     - name: Sign executable with osslsigncode
@@ -51,6 +54,7 @@ jobs:
         osslsigncode sign -pkcs12 code_signing.pfx -pass yourpassphrase \
         -n "Your Application Name" -i "http://yourdomain.com" -t http://timestamp.digicert.com \
         -in out/yourapplication.exe -out out/yourapplication-signed.exe
+        echo "Executable signed."
 
     - name: Verify signature
       run: osslsigncode verify -in out/yourapplication-signed.exe
@@ -60,3 +64,32 @@ jobs:
       with:
         name: yourapplication-signed
         path: out/yourapplication-signed.exe
+
+    # - name: Generate private key and self-signed certificate
+    #   run: |
+    #     openssl req -newkey rsa:2048 -nodes -keyout private.key -x509 -days 90 -out code_signing.crt -subj "/C=US/ST=State/L=City/O=Organization/OU=Unit/CN=yourdomain.com"
+
+    # - name: Create PKCS#12 keystore
+    #   run: |
+    #     openssl pkcs12 -export -in code_signing.crt -inkey private.key -out code_signing.p12 -name code_signing -passout pass:yourpassphrase
+    #     openssl pkcs12 -info -in code_signing.p12 -noout -passin pass:yourpassphrase
+
+    # - name: Convert PKCS#12 to PFX (Personal Information Exchange)
+    #   run: |
+    #     openssl pkcs12 -in code_signing.p12 -out code_signing.pfx -passin pass:yourpassphrase -passout pass:yourpassphrase
+    #     openssl pkcs12 -info -in code_signing.pfx -noout -passin pass:yourpassphrase
+
+    # - name: Sign executable with osslsigncode
+    #   run: |
+    #     osslsigncode sign -pkcs12 code_signing.pfx -pass yourpassphrase \
+    #     -n "Your Application Name" -i "http://yourdomain.com" -t http://timestamp.digicert.com \
+    #     -in out/yourapplication.exe -out out/yourapplication-signed.exe
+
+    # - name: Verify signature
+    #   run: osslsigncode verify -in out/yourapplication-signed.exe
+
+    # - name: Upload signed executable
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: yourapplication-signed
+    #     path: out/yourapplication-signed.exe
