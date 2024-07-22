@@ -39,13 +39,21 @@ jobs:
     - name: Convert PKCS#12 to PFX (Personal Information Exchange)
       run: openssl pkcs12 -in code_signing.p12 -out code_signing.pfx -passin pass:yourpassphrase -passout pass:yourpassphrase
 
+    - name: Find signtool
+      id: find-signtool
+      run: |
+        curl -sSL -o vswhere.exe https://github.com/microsoft/vswhere/releases/download/2.8.4/vswhere.exe
+        SIGNSDK_PATH=$(./vswhere.exe -latest -requires Microsoft.Component.ClickOnce.MSBuild -find **/signtool.exe)
+        echo "SIGNSDK_PATH=$SIGNSDK_PATH" >> $GITHUB_ENV
+
     - name: Sign executable
       run: |
-        "C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe" sign /f code_signing.pfx /p yourpassphrase /t http://timestamp.digicert.com out\yourapplication.exe
+        "$env:SIGNSDK_PATH" sign /f code_signing.pfx /p yourpassphrase /t http://timestamp.digicert.com out\yourapplication.exe
 
     - name: Verify signature
       run: |
-        "C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe" verify /pa /v out\yourapplication.exe
+        "$env:SIGNSDK_PATH" verify /pa /v out\yourapplication.exe
+
 
     - name: Upload signed executable
       uses: actions/upload-artifact@v3
