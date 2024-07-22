@@ -29,6 +29,9 @@ jobs:
     - name: Publish project
       run: dotnet publish MyProject.csproj -c Release -r win-x64 --self-contained true -o ./publish
 
+    - name: Install osslsigncode
+      run: sudo apt-get update && sudo apt-get install -y osslsigncode
+
     - name: Generate private key and self-signed certificate
       run: |
         openssl req -newkey rsa:2048 -nodes -keyout private.key -x509 -days 90 -out code_signing.crt -subj "/C=US/ST=State/L=City/O=Organization/OU=Unit/CN=yourdomain.com"
@@ -39,21 +42,14 @@ jobs:
     - name: Convert PKCS#12 to PFX (Personal Information Exchange)
       run: openssl pkcs12 -in code_signing.p12 -out code_signing.pfx -passin pass:yourpassphrase -passout pass:yourpassphrase
 
-    - name: Find signtool
-      id: find-signtool
+    - name: Sign executable with osslsigncode
       run: |
-        curl -sSL -o vswhere.exe https://github.com/microsoft/vswhere/releases/download/2.8.4/vswhere.exe
-        SIGNSDK_PATH=$(./vswhere.exe -latest -requires Microsoft.Component.ClickOnce.MSBuild -find **/signtool.exe)
-        echo "SIGNSDK_PATH=$SIGNSDK_PATH" >> $GITHUB_ENV
-
-    - name: Sign executable
-      run: |
-        "$env:SIGNSDK_PATH" sign /f code_signing.pfx /p yourpassphrase /t http://timestamp.digicert.com out\yourapplication.exe
+        osslsigncode sign -pkcs12 code_signing.pfx -pass yourpassphrase \
+        -n "Your Application Name" -i "http://yourdomain.com" -t http://timestamp.digicert.com \
+        -in out/yourapplication.exe -out out/yourapplication-signed.exe
 
     - name: Verify signature
-      run: |
-        "$env:SIGNSDK_PATH" verify /pa /v out\yourapplication.exe
-
+      run: osslsigncode verify -in out/yourapplication-signed.exe
 
     - name: Upload signed executable
       uses: actions/upload-artifact@v3
