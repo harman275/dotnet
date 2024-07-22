@@ -1,0 +1,54 @@
+name: .NET CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x' # Adjust the version as needed
+
+    - name: Install dependencies
+      run: dotnet restore
+
+    - name: Build project
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Publish project
+      run: dotnet publish -c Release -o out
+
+    - name: Generate private key and self-signed certificate
+      run: |
+        openssl req -newkey rsa:2048 -nodes -keyout private.key -x509 -days 90 -out code_signing.crt -subj "/C=US/ST=State/L=City/O=Organization/OU=Unit/CN=yourdomain.com"
+
+    - name: Create PKCS#12 keystore
+      run: openssl pkcs12 -export -in code_signing.crt -inkey private.key -out code_signing.p12 -name code_signing -passout pass:yourpassphrase
+
+    - name: Convert PKCS#12 to PFX (Personal Information Exchange)
+      run: openssl pkcs12 -in code_signing.p12 -out code_signing.pfx -passin pass:yourpassphrase -passout pass:yourpassphrase
+
+    - name: Sign executable
+      run: |
+        sudo apt-get install -y signtool
+        signtool sign /f code_signing.pfx /p yourpassphrase /t http://timestamp.digicert.com out/yourapplication.exe
+
+    - name: Verify signature
+      run: signtool verify /pa /v out/yourapplication.exe
+
+    - name: Upload signed executable
+      uses: actions/upload-artifact@v3
+      with:
+        name: yourapplication-signed
+        path: out/yourapplication.exe
