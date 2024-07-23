@@ -1,4 +1,4 @@
-name: .NET Build and Create Executable
+name: .NET Build
 on:
   push:
     branches:
@@ -22,28 +22,20 @@ jobs:
       with:
         dotnet-version: '8.0.x' # specify the .NET version you need
         
-    - name: Create self-signed certificate
-      run: |
-        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mycert.key -out mycert.crt -subj "/CN=localhost"
-        openssl pkcs12 -export -out mycert.pfx -inkey mycert.key -in mycert.crt -passout pass:yourpassword
-        
     - name: Restore dependencies
       run: dotnet restore MySolution.sln
       
-    - name: Build
+    - name: build
       run: dotnet build MySolution.sln --configuration Release --output ./output
       
     - name: Publish
-      run: dotnet publish MyProject.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish
-      
-    - name: Rename output to exe
-      run: mv ./publish/MyProject ./publish/MyProject.exe
+      run: dotnet publish MyProject.csproj -c Release -r win-x64 --self-contained true -o ./publish
       
     - name: Archive build output
       uses: actions/upload-artifact@v3
       with:
         name: executable
-        path: ./publish/MyProject.exe
+        path: ./publish
 
 
     # - name: Generate private key and self-signed certificate
